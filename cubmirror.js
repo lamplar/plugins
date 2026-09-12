@@ -1,37 +1,36 @@
 (function () {
-    'use me strict';
+    'use strict';
 
-    function initPlugin() {
-    
+    function applyCubFix() {
+        
         Lampa.Storage.set('cub_domain', 'cub.black');
 
-    
-        if (window.cub_domain) {
-            window.cub_domain = 'https://cub.black/';
-        }
+        
+        window.cub_domain = 'https://cub.black/';
 
-  
-        if (Lampa.CUB && Lampa.CUB.mac) {
+        
+        if (window.Lampa && Lampa.CUB) {
             Lampa.CUB.domain = 'https://cub.black/';
+            if (Array.isArray(Lampa.CUB.mirrors)) {
+                Lampa.CUB.mirrors = ['https://cub.black/'];
+            }
         }
 
-    
-        Lampa.Listener.follow('app', function (e) {
-            if (e.type === 'ready') {
-                if (Lampa.Account && Lampa.Account.url) {
-                    Lampa.Account.url = function (method) {
-                        return 'https://cub.black/api/' + method;
-                    };
-                }
-            }
-        });
+        
+        if (window.Lampa && Lampa.Account) {
+            Lampa.Account.url = function (method) {
+                return 'https://cub.black/api/' + method;
+            };
+        }
     }
 
+    
+    applyCubFix();
     if (window.appready) {
-        initPlugin();
+        applyCubFix();
     } else {
         Lampa.Listener.follow('app', function (e) {
-            if (e.type === 'ready') initPlugin();
+            if (e.type === 'ready') applyCubFix();
         });
     }
 })();
