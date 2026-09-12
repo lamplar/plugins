@@ -1,70 +1,61 @@
 (function () {
     'use strict';
 
-    var TARGET_DOMAIN = 'cub.black';
-    var TARGET_URL = 'https://' + TARGET_DOMAIN + '/';
+    function initUltimateCubFix() {
+        // Защита от двойного запуска
+        if (!window.Lampa || !Lampa.network || Lampa.network.cub_black_patched) return;
 
-    function applyDeepCubFix() {
-        
-        Lampa.Storage.set('cub_domain', TARGET_DOMAIN);
-
-        
-        if (window.cub_domain) window.cub_domain = TARGET_URL;
-        
-        if (window.Lampa) {
+        // Функция подмены адресов на лету
+        function fixUrl(urlStr) {
+            if (!urlStr) return urlStr;
             
-            if (Lampa.CUB) {
-                Lampa.CUB.domain = TARGET_URL;
-                Lampa.CUB.mirrors = [TARGET_URL];
+            // 1. Постеры и картинки (TMDB proxy): направляем на cub.best
+            if (/^https?:\/\/(api)?tmdb\.cub\.[a-z]+/i.test(urlStr)) {
+                // Сохраняем начало (tmdb или apitmdb) и меняем только конец на .best
+                return urlStr.replace(/^(https?:\/\/(?:api)?tmdb\.cub\.)[a-z]+/i, '$1best');
             }
             
-            if (Lampa.Account) {
-                Lampa.Account.url = function (method) {
-                    return TARGET_URL + 'api/' + method;
-                };
+            // 2. Страницы фильмов, сериалов, комментарии и аккаунт: направляем на cub.black
+            if (/^https?:\/\/cub\.[a-z]+/i.test(urlStr)) {
+                return urlStr.replace(/^https?:\/\/cub\.[a-z]+/i, 'https://cub.black');
             }
-
             
-            if (Lampa.network && !Lampa.network.cub_patched) {
-                
-                
-                var originalRequest = Lampa.network.request;
-                Lampa.network.request = function (url, method, data, onsuccess, onerror, options) {
-                    if (typeof url === 'string') {
-                        
-                        url = url.replace(/https?:\/\/(cub\.best|cub\.watch|cub\.red|cub\.tv|cub\.pw)\//gi, TARGET_URL);
-                    } else if (url && typeof url.url === 'string') {
-                        url.url = url.url.replace(/https?:\/\/(cub\.best|cub\.watch|cub\.red|cub\.tv|cub\.pw)\//gi, TARGET_URL);
-                    }
-                    return originalRequest.apply(this, arguments);
-                };
-
-                
-                var originalSilent = Lampa.network.silent;
-                if (originalSilent) {
-                    Lampa.network.silent = function (url, onsuccess, onerror) {
-                        if (typeof url === 'string') {
-                            url = url.replace(/https?:\/\/(cub\.best|cub\.watch|cub\.red|cub\.tv|cub\.pw)\//gi, TARGET_URL);
-                        }
-                        return originalSilent.apply(this, arguments);
-                    };
-                }
-
-                Lampa.network.cub_patched = true;
-            }
+            return urlStr;
         }
+
+        // Перехватываем стандартные запросы
+        var originalRequest = Lampa.network.request;
+        Lampa.network.request = function (url, method, data, onsuccess, onerror, options) {
+            if (typeof url === 'string') {
+                url = fixUrl(url);
+            } else if (url && url.url) {
+                url.url = fixUrl(url.url);
+            }
+            return originalRequest.apply(this, arguments);
+        };
+
+        // Перехватываем фоновые запросы (например, отметки о просмотре)
+        var originalSilent = Lampa.network.silent;
+        if (originalSilent) {
+            Lampa.network.silent = function (url, onsuccess, onerror) {
+                if (typeof url === 'string') {
+                    url = fixUrl(url);
+                } else if (url && url.url) {
+                    url.url = fixUrl(url.url);
+                }
+                return originalSilent.apply(this, arguments);
+            };
+        }
+
+        Lampa.network.cub_black_patched = true; // Ставим метку
     }
 
-    
-    applyDeepCubFix();
-
-    
-    
+    // Запускаем при полной загрузке
     if (window.appready) {
-        applyDeepCubFix();
+        initUltimateCubFix();
     } else {
         Lampa.Listener.follow('app', function (e) {
-            if (e.type === 'ready') applyDeepCubFix();
+            if (e.type === 'ready') initUltimateCubFix();
         });
     }
 })();
