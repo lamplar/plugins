@@ -3,11 +3,19 @@
 
     function init() {
         if (window.Lampa) {
-            Lampa.Noty.show('Рабочий плагин', {
-                time: 5000
-            });
+            var html = $('<div><div style="text-align: center; font-size: 24px; padding: 30px;">Рабочий плагин</div></div>');
             
-            console.log('Плагин "Рабочий плагин" успешно запущен!');
+            Lampa.Modal.open({
+                title: 'Сообщение',
+                html: html,
+                onBack: function () {
+                    Lampa.Modal.close();
+                }
+            });
+
+            setTimeout(function () {
+                Lampa.Modal.close();
+            }, 4000);
         } else {
             setTimeout(init, 100);
         }
